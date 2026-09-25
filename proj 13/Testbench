@@ -1,0 +1,200 @@
+testbench/test_cases.md
+Testbench
+1. Objective
+
+The purpose of the testbench is to verify that the Women Safety IoT Device correctly responds to emergency conditions and handles GPS and GSM communication.
+
+2. Test Environment
+Hardware
+
+ESP32
+
+SOS push button
+
+Buzzer
+
+LED
+
+GPS module
+
+GSM module
+
+Software
+
+Arduino IDE
+
+ESP32 board package
+
+TinyGPS++ library
+
+Serial Monitor
+
+3. Test Cases
+TC01 – Power-On Test
+
+Input:
+
+Power ON the ESP32.
+
+Expected result:
+
+ESP32 starts successfully.
+
+LED is OFF.
+
+Buzzer is OFF.
+
+Serial Monitor displays system initialization.
+
+System enters monitoring mode.
+
+Expected output:
+
+Women Safety IoT Device
+GSM initialized.
+System ready.
+
+TC02 – Normal Operation
+
+Input:
+
+Do not press the SOS button.
+
+Expected result:
+
+No emergency alarm.
+
+Buzzer remains OFF.
+
+Device continues monitoring.
+
+Expected output:
+
+System ready.
+
+TC03 – SOS Button Test
+
+Input:
+
+Press the SOS button.
+
+Expected result:
+
+Emergency mode starts.
+
+Buzzer turns ON/OFF.
+
+LED begins blinking.
+
+Emergency message is generated.
+
+Expected output:
+
+!!! EMERGENCY !!!
+SOS button activated.
+
+TC04 – GPS Available
+
+Input:
+
+Press SOS while valid GPS data is available.
+
+Expected result:
+
+The generated message contains latitude and longitude.
+
+Example:
+
+EMERGENCY ALERT!
+SOS button activated.
+
+Latitude: 15.828125
+Longitude: 78.037270
+
+Google Maps:
+https://maps.google.com/?q=15.828125,78.037270
+
+TC05 – GPS Unavailable
+
+Input:
+
+Press SOS without a valid GPS fix.
+
+Expected result:
+
+The emergency system still activates.
+
+Expected message:
+
+EMERGENCY ALERT!
+SOS button activated.
+
+GPS location unavailable.
+
+
+The lack of GPS data should not prevent the local alarm from operating.
+
+TC06 – GSM SMS Test
+
+Input:
+
+Press SOS with GSM network available.
+
+Expected result:
+
+The GSM module receives the SMS command and sends the emergency message.
+
+Serial output:
+
+Sending SMS...
+SMS command completed.
+
+TC07 – GSM Unavailable
+
+Input:
+
+Press SOS while GSM communication is unavailable.
+
+Expected result:
+
+Local buzzer continues operating.
+
+LED continues indicating emergency mode.
+
+System does not stop because of GSM failure.
+
+TC08 – Multiple Button Presses
+
+Input:
+
+Press SOS repeatedly.
+
+Expected result:
+
+The system remains in emergency mode and does not repeatedly trigger a new emergency SMS on every loop iteration.
+
+4. Test Result Table
+Test Case	Expected	Result
+TC01	System initializes	PASS/FAIL
+TC02	Normal monitoring	PASS/FAIL
+TC03	Emergency activates	PASS/FAIL
+TC04	GPS coordinates generated	PASS/FAIL
+TC05	GPS failure handled	PASS/FAIL
+TC06	SMS generated	PASS/FAIL
+TC07	GSM failure handled	PASS/FAIL
+TC08	Repeated presses handled	PASS/FAIL
+5. Acceptance Criteria
+
+The prototype is considered functional when:
+
+The SOS button is reliably detected.
+
+The emergency indicator activates.
+
+GPS coordinates are correctly read when available.
+
+An emergency message is generated.
+
+The GSM module can send the message when cellular service is available.
+
+The local alarm continues even when GPS or GSM is unavailable.

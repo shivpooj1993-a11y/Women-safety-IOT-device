@@ -1,0 +1,221 @@
+src/women_safety_device.ino
+#include <TinyGPS++.h>
+#include <HardwareSerial.h>
+
+// -----------------------------
+// Pin definitions
+// -----------------------------
+#define SOS_PIN     27
+#define BUZZER_PIN  26
+#define LED_PIN      2
+
+// GPS pins
+#define GPS_RX      16
+#define GPS_TX      17
+
+// GSM pins
+#define GSM_RX       4
+#define GSM_TX       5
+
+// Emergency contact number
+const char EMERGENCY_NUMBER[] = "+91XXXXXXXXXX";
+
+// -----------------------------
+// Serial interfaces
+// -----------------------------
+HardwareSerial GPS_Serial(1);
+HardwareSerial GSM_Serial(2);
+
+TinyGPSPlus gps;
+
+// -----------------------------
+// System variables
+// -----------------------------
+bool emergencyMode = false;
+unsigned long lastBlink = 0;
+bool ledState = false;
+
+// -----------------------------
+// Setup
+// -----------------------------
+void setup()
+{
+  Serial.begin(115200);
+
+  pinMode(SOS_PIN, INPUT_PULLUP);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
+
+  digitalWrite(BUZZER_PIN, LOW);
+  digitalWrite(LED_PIN, LOW);
+
+  // GPS
+  GPS_Serial.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
+
+  // GSM
+  GSM_Serial.begin(9600, SERIAL_8N1, GSM_RX, GSM_TX);
+
+  delay(2000);
+
+  Serial.println("================================");
+  Serial.println(" Women Safety IoT Device");
+  Serial.println("================================");
+
+  initializeGSM();
+
+  Serial.println("System ready.");
+}
+
+// -----------------------------
+// Main loop
+// -----------------------------
+void loop()
+{
+  readGPS();
+
+  // SOS button pressed
+  if (digitalRead(SOS_PIN) == LOW && !emergencyMode)
+  {
+    delay(50);
+
+    if (digitalRead(SOS_PIN) == LOW)
+    {
+      activateEmergency();
+    }
+  }
+
+  if (emergencyMode)
+  {
+    emergencyIndicators();
+  }
+}
+
+// -----------------------------
+// Read GPS data
+// -----------------------------
+void readGPS()
+{
+  while (GPS_Serial.available())
+  {
+    gps.encode(GPS_Serial.read());
+  }
+}
+
+// -----------------------------
+// Initialize GSM
+// -----------------------------
+void initializeGSM()
+{
+  GSM_Serial.println("AT");
+  delay(1000);
+
+  GSM_Serial.println("AT+CMGF=1");
+  delay(1000);
+
+  Serial.println("GSM initialized.");
+}
+
+// -----------------------------
+// Emergency activation
+// -----------------------------
+void activateEmergency()
+{
+  emergencyMode = true;
+
+  Serial.println();
+  Serial.println("!!! EMERGENCY !!!");
+  Serial.println("SOS button activated.");
+
+  digitalWrite(BUZZER_PIN, HIGH);
+
+  String message = createEmergencyMessage();
+
+  Serial.println("Emergency message:");
+  Serial.println(message);
+
+  sendSMS(message);
+}
+
+// -----------------------------
+// Create emergency message
+// -----------------------------
+String createEmergencyMessage()
+{
+  String message = "EMERGENCY ALERT!\n";
+  message += "SOS button activated.\n\n";
+
+  if (gps.location.isValid())
+  {
+    double latitude = gps.location.lat();
+    double longitude = gps.location.lng();
+
+    message += "Latitude: ";
+    message += String(latitude, 6);
+
+    message += "\nLongitude: ";
+    message += String(longitude, 6);
+
+    message += "\n\nGoogle Maps:\n";
+    message += "https://maps.google.com/?q=";
+    message += String(latitude, 6);
+    message += ",";
+    message += String(longitude, 6);
+  }
+  else
+  {
+    message += "GPS location unavailable.";
+  }
+
+  return message;
+}
+
+// -----------------------------
+// Send SMS
+// -----------------------------
+void sendSMS(String message)
+{
+  Serial.println("Sending SMS...");
+
+  GSM_Serial.println("AT+CMGF=1");
+  delay(1000);
+
+  GSM_Serial.print("AT+CMGS=\"");
+  GSM_Serial.print(EMERGENCY_NUMBER);
+  GSM_Serial.println("\");
+
+  delay(1000);
+
+  GSM_Serial.print(message);
+
+  delay(500);
+
+  GSM_Serial.write(26);   // CTRL+Z
+
+  delay(5000);
+
+  Serial.println("SMS command completed.");
+}
+
+// -----------------------------
+// Emergency indicators
+// -----------------------------
+void emergencyIndicators()
+{
+  if (millis() - lastBlink >= 300)
+  {
+    lastBlink = millis();
+
+    ledState = !ledState;
+
+    digitalWrite(LED_PIN, ledState);
+
+    if (ledState)
+    {
+      digitalWrite(BUZZER_PIN, HIGH);
+    }
+    else
+    {
+      digitalWrite(BUZZER_PIN, LOW);
+    }
+  }
+}
